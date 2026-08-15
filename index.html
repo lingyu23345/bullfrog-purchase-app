@@ -481,12 +481,24 @@
                         </button>
                     </div>
                     <!-- 豆包视觉 配置 -->
-                    <div id="doubaoConfig" style="display:none;">
-                        <div class="mb-3">
-                            <label class="fw-bold">API 端点：</label>
-                            <input type="text" id="doubaoApiUrl" class="form-control" value="http://localhost:5000/api/doubao">
-                            <small class="text-muted">本地代理地址（通过后端转发到火山引擎方舟 API，避免 CORS）</small>
-                        </div>
+            <div id="doubaoConfig" style="display:none;">
+                <div class="mb-3">
+                    <label class="fw-bold d-block">调用方式：</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="doubaoMode" id="modeProxy" value="proxy" checked>
+                        <label class="form-check-label" for="modeProxy">本地代理（推荐，免 CORS）</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="doubaoMode" id="modeDirect" value="direct">
+                        <label class="form-check-label" for="modeDirect">直连方舟 API</label>
+                    </div>
+                    <small class="text-muted d-block mt-1">代理模式经本地后端转发，彻底规避浏览器跨域；直连模式由浏览器直接请求方舟，需方舟允许跨域（其 Responses API 默认放行）。</small>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold" id="apiUrlLabel">API 端点（代理）：</label>
+                    <input type="text" id="doubaoApiUrl" class="form-control" value="http://127.0.0.1:5000/api/doubao">
+                    <small class="text-muted" id="apiUrlHint">代理/Serverless 地址（转发到方舟，避免 CORS）。本地用 paddle_server.py；部署到 GitHub Pages 时填写你的 Cloudflare/Vercel 代理地址。</small>
+                </div>
                         <div class="mb-3">
                             <label class="fw-bold">API Key：</label>
                             <input type="password" id="doubaoApiKey" class="form-control" placeholder="Bearer Token">
@@ -501,9 +513,9 @@
                             <input type="checkbox" id="doubaoParseEnabled" class="form-check-input" checked>
                             <label class="form-check-label" for="doubaoParseEnabled">直接返回牛蛙收购单结构化JSON</label>
                         </div>
-                        <div class="alert alert-info" style="font-size:12px; padding:6px 10px; margin-bottom:8px;">
-                            ℹ️ 豆包通过视觉模型直接理解图片语义，无需坐标解析。若浏览器报 CORS，需自建后端代理转发请求。
-                        </div>
+                <div class="alert alert-info" style="font-size:12px; padding:6px 10px; margin-bottom:8px;">
+                    ℹ️ 豆包通过视觉模型直接理解图片语义，无需坐标解析。默认使用本地代理转发（免 CORS）；如需直连方舟，请切换上方"调用方式"并确认方舟端点，代理与直连两种模式均已支持。
+                </div>
                     </div>
                     <button class="btn btn-primary btn-lg w-100" id="ocrStartBtn" onclick="startOCR()" disabled>
                         🚀 开始识别
@@ -513,6 +525,43 @@
             </div>
 
             <div id="ocrResultContainer"></div>
+        </div>
+
+        <!-- 云端同步面板 (GitHub) -->
+        <div class="sync-panel config-panel" id="syncPanel" style="display:none;">
+            <h3>☁️ 云端同步（GitHub）</h3>
+            <p class="text-muted" style="font-size:13px;">把全部单据数据同步到你的 GitHub 仓库，在任何设备的浏览器打开本页面都能拉取/上传，实现跨设备使用。<strong>建议数据同步仓库使用私有仓库</strong>，避免业务数据（养殖户、车牌、重量等）被公开。</p>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="fw-bold">数据仓库（owner/repo）：</label>
+                    <input type="text" id="ghRepo" class="form-control" placeholder="例如 yingsheng/bullfrog-data">
+                    <small class="text-muted">存放同步数据的仓库，可与本程序代码仓库不同；建议私有。</small>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="fw-bold">分支：</label>
+                    <input type="text" id="ghBranch" class="form-control" value="main">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="fw-bold">数据文件路径：</label>
+                    <input type="text" id="ghDataPath" class="form-control" value="data/bullfrog-data.json">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="fw-bold">GitHub Token（PAT，需 repo 权限）：</label>
+                <input type="password" id="ghToken" class="form-control" placeholder="ghp_xxx 或 github_pat_xxx">
+                <small class="text-muted">仅保存在本机浏览器 localStorage，不会上传。建议为专用仓库创建仅具 Contents 读写权限的 Fine-grained PAT。</small>
+            </div>
+            <div class="form-check mb-3">
+                <input type="checkbox" id="ghAutoSync" class="form-check-input">
+                <label class="form-check-label" for="ghAutoSync">自动同步（数据变更约 3 秒后自动上传；打开页面时自动从云端拉取最新数据）</label>
+            </div>
+            <div class="btn-group-custom">
+                <button class="btn btn-primary" onclick="githubPush()">⬆️ 上传到 GitHub</button>
+                <button class="btn btn-secondary" onclick="githubPull()">⬇️ 从 GitHub 拉取</button>
+                <button class="btn btn-outline-secondary" onclick="githubTest()">🔌 测试连接</button>
+                <button class="btn btn-outline-danger" onclick="githubClearConfig()">🗑️ 清除配置</button>
+            </div>
+            <div class="ocr-status" id="syncStatus"></div>
         </div>
 
         <!-- 牛蛙定量面板切换按钮 -->
@@ -526,6 +575,13 @@
         <div class="text-center mb-3">
             <button class="btn btn-outline-primary" id="toggleOcrBtn" onclick="toggleOcrPanel()">
                 📷 打开OCR识别功能
+            </button>
+        </div>
+
+        <!-- 云端同步面板切换按钮 -->
+        <div class="text-center mb-3">
+            <button class="btn btn-outline-dark" id="toggleSyncBtn" onclick="toggleSyncPanel()">
+                ☁️ 打开云端同步设置
             </button>
         </div>
 
@@ -643,6 +699,341 @@
         let ocrEngine = 'doubao'; // 当前OCR引擎: doubao
         let ocrRawResults = null; // 保存原始OCR结果供解析
 
+        // ========== 公共常量 ==========
+        const DEFAULT_RANGES = {
+            dawa_min: 24.7, dawa_max: 26.5,
+            zhongwa_min: 22, zhongwa_max: 24.5,
+            xiaowa_min: 19.5, xiaoxiaowa_max: 21.5,
+            xiaoxiaowa_min: 15, xiaoxiaowa_max: 18
+        };
+        const RANGE_FIELDS = [
+            'dawa_min', 'dawa_max',
+            'zhongwa_min', 'zhongwa_max',
+            'xiaowa_min', 'xiaoxiaowa_max',
+            'xiaoxiaowa_min', 'xiaoxiaowa_max'
+        ];
+        const ALL_CATEGORIES = ['大蛙', '中蛙', '小蛙', '小小蛙', '特殊行', '次蛙'];
+        const EXCLUDED_CATEGORY = '次蛙'; // 全部汇总时排除"次蛙"
+
+        // ========== 公共工具函数 ==========
+        // 安全的数字转换：非数字/空值返回 fallback
+        function num(v, fallback = 0) {
+            const n = Number(v);
+            return isNaN(n) ? fallback : n;
+        }
+
+        // 四舍五入到 2 位小数（避免浮点尾巴，如 0.1+0.2）
+        function round2(v) {
+            return parseFloat(Number(v).toFixed(2));
+        }
+
+        // 读取页面牛蛙区间配置
+        function readRanges() {
+            const r = {};
+            RANGE_FIELDS.forEach(f => {
+                const el = document.getElementById('range_' + f);
+                r[f] = el ? num(el.value) : 0;
+            });
+            return r;
+        }
+
+        // 将区间配置写回页面输入框
+        function applyRanges(ranges) {
+            if (!ranges) return;
+            RANGE_FIELDS.forEach(f => {
+                const el = document.getElementById('range_' + f);
+                if (el) el.value = (ranges[f] != null) ? ranges[f] : (DEFAULT_RANGES[f] != null ? DEFAULT_RANGES[f] : 0);
+            });
+        }
+
+        // 按分类汇总（排除"次蛙"计算全部汇总）
+        function computeCategoryStats(rows, crateWeight) {
+            const categories = {};
+            ALL_CATEGORIES.forEach(c => {
+                categories[c] = { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 };
+            });
+            (rows || []).forEach(row => {
+                const gross = num(row.grossWeight);
+                const crates = num(row.crateCount);
+                const crateWeightTotal = crates * crateWeight;
+                const net = gross - crateWeightTotal;
+                const cat = ALL_CATEGORIES.includes(row.category) ? row.category : '特殊行';
+                const stat = categories[cat];
+                stat.rows += 1;
+                stat.totalCrates += crates;
+                stat.totalGross += gross;
+                stat.totalCrateWeight += crateWeightTotal;
+                stat.totalNet += net;
+            });
+            const validRows = (rows || []).filter(r => r.category !== EXCLUDED_CATEGORY);
+            const totalRows = validRows.length;
+            const totalCrates = validRows.reduce((sum, r) => sum + num(r.crateCount), 0);
+            const totalGross = validRows.reduce((sum, r) => sum + num(r.grossWeight), 0);
+            const totalCrateWeight = totalCrates * crateWeight;
+            const totalNet = totalGross - totalCrateWeight;
+            const totalAvgNet = totalCrates > 0 ? totalNet / totalCrates : 0;
+            return { categories, totalRows, totalCrates, totalGross, totalCrateWeight, totalNet, totalAvgNet };
+        }
+
+        // 判断某分类汇总是否全为 0（用于跳过空类别）
+        function isCategoryEmpty(d) {
+            return d.rows === 0 && d.totalCrates === 0 &&
+                Math.abs(d.totalGross) < 1e-6 && Math.abs(d.totalCrateWeight) < 1e-6 &&
+                Math.abs(d.totalNet) < 1e-6;
+        }
+
+        // =====================================================================
+        // =====================================================================
+        // 导入校验 / 自动校正规则（仅作用于 OCR 结果填充到统计表格）
+        // ---------------------------------------------------------------------
+        // 适用场景：把 OCR 识别出的牛蛙收购单 items 填充进统计表格前，对每一行
+        //          的「毛重 / 皮框数」做校验，不满足时尝试自动校正。
+        //
+        // 关键约定：
+        //  - 皮框数 crateCount：OCR 的 tare 栏若能解析为 1..MAX_PARSED_TARE 的
+        //    整数则视为框数（source='parsed'）；否则取默认值
+        //    IMPORT_DEFAULT_CRATE_COUNT(=6)（source='default'）。
+        //  - 毛重 grossWeight：来自 item.weight，经 num() 归一化。
+        //
+        // 规则定义：
+        //  R1 基础校验：皮框数为默认值 6 时，毛重必须是 100..999 的三位整数；
+        //              否则进入「失败 / 校正」流程。
+        //  R3 截断校正：毛重因漏识最高位退化为 1..99 时，若在相邻 ±NEIGHBOR_WINDOW
+        //    行内存在「尾值(=%100)最接近、且差距 ≤ TAIL_TOLERANCE」的三位数邻居，
+        //    则自动还原为该邻居完整值后导入（典型：149 误识别为 49）。
+        //
+        // 可扩展性：校正逻辑集中在 IMPORT_CORRECTORS 注册表；新增校正规则只需追加
+        //          一个 corrector(ctx) 函数，classifyImportRow 会自动依次尝试。
+        //
+        // 边界情况：
+        //  - 毛重为 0 / 空 / 非数值：视为无数据空行，直接跳过（不报错、不计入）。
+        //  - 毛重为负：物理上不可能，按识别错误上报（跳过且不导入）。
+        //  - 皮框数非默认（解析成功）：不触发 R1，两位数毛重也照常导入。
+        //  - 校正候选不满足尾值约束（差距 > TAIL_TOLERANCE 或无三位数邻居）：
+        //    无法可靠猜测，标记失败跳过。
+        // =====================================================================
+        const IMPORT_DEFAULT_CRATE_COUNT = 6;     // 皮框数默认值
+        const MAX_PARSED_TARE = 20;               // tare 栏可解析为框数的上限
+        const THREE_DIGIT_MIN = 100;              // R1：三位数下界（含）
+        const THREE_DIGIT_MAX = 999;              // R1：三位数上界（含）
+        const TRUNCATED_MIN = 1;                  // R3：漏识后毛重下界（含）
+        const TRUNCATED_MAX = 99;                 // R3：漏识后毛重上界（含）
+        const TAIL_TOLERANCE = 5;                 // R3：尾值可接受最大偏差
+        const NEIGHBOR_WINDOW = 10;               // R3：相邻行搜索半窗口（±行）
+        const MAX_REPORT_ROWS = 15;               // 弹窗单类记录最多展示条数
+        const TARE_SEPARATORS = /[\\/|]/g;        // tare 栏需剔除的分隔符
+
+        /**
+         * 解析皮框数：tare 栏能解析为 1..MAX_PARSED_TARE 整数 -> {count, source:'parsed'}；
+         * 否则返回默认值 {count: IMPORT_DEFAULT_CRATE_COUNT, source:'default'}。
+         * @param {string|number} tareStr OCR 识别出的皮重 / 框数字段
+         * @returns {{count:number, source:'parsed'|'default'}}
+         */
+        function resolveCrateCount(tareStr) {
+            const s = String(tareStr ?? '');
+            if (s && s !== '-') {
+                const n = num(s.replace(TARE_SEPARATORS, ''));
+                if (n > 0 && n <= MAX_PARSED_TARE) return { count: n, source: 'parsed' };
+            }
+            return { count: IMPORT_DEFAULT_CRATE_COUNT, source: 'default' };
+        }
+
+        /**
+         * R3 校正器：在相邻 ±NEIGHBOR_WINDOW 行内寻找「尾值最接近当前两位数 weight」
+         * 的三位数邻居；找到且尾值差距 ≤ TAIL_TOLERANCE 则返回其完整值，否则返回 null。
+         * 选择策略：先比尾值接近度，尾值相同时比行距（更近者优先）。
+         * @param {{weight:number, allWeights:number[], idx:number}} ctx
+         * @returns {number|null}
+         */
+        function correctTruncatedWeight({ weight, allWeights, idx }) {
+            if (!Number.isInteger(weight) || weight < TRUNCATED_MIN || weight > TRUNCATED_MAX) return null;
+            let best = null, bestDiff = Infinity, bestDist = Infinity;
+            const lo = Math.max(0, idx - NEIGHBOR_WINDOW);
+            const hi = Math.min(allWeights.length - 1, idx + NEIGHBOR_WINDOW);
+            for (let j = lo; j <= hi; j++) {
+                if (j === idx) continue;
+                const neighbor = num(allWeights[j]);
+                if (neighbor < THREE_DIGIT_MIN || neighbor > THREE_DIGIT_MAX) continue;
+                const diff = Math.abs(weight - (neighbor % 100));
+                const dist = Math.abs(j - idx);
+                if (diff < bestDiff || (diff === bestDiff && dist < bestDist)) {
+                    bestDiff = diff; bestDist = dist; best = neighbor;
+                }
+            }
+            return (best != null && bestDiff <= TAIL_TOLERANCE) ? best : null;
+        }
+
+        // 校正器注册表：classifyImportRow 会依次尝试，遇到首个可校正结果即返回。
+        const IMPORT_CORRECTORS = [correctTruncatedWeight];
+
+        /**
+         * 单条记录的校验与（可选）校正编排：基础校验 R1 + 自动校正 R3。
+         * @returns {{status:'ok'|'corrected'|'invalid'|'empty', weight:number, reason?:string}}
+         *   - 'empty'    : 空行（0 / 空 / 非数值），调用方应跳过
+         *   - 'ok'       : 校验通过，使用 weight 直接导入
+         *   - 'corrected': 经校正得到新 weight，使用校正值导入
+         *   - 'invalid'  : 不满足 R1 且无法校正，reason 说明原因，调用方应跳过并报错
+         */
+        function classifyImportRow(rawWeight, crateCount, crateCountSource, allWeights, idx) {
+            const weight = num(rawWeight);
+            if (!Number.isFinite(weight) || weight === 0) {
+                return { status: 'empty', weight };               // 空行：无数据，跳过
+            }
+            if (weight < 0) {
+                return { status: 'invalid', weight, reason: `毛重 ${rawWeight} 不是有效数值（不能为负）` };
+            }
+            // R1：仅当皮框数为默认值 6 时强制三位数约束
+            if (crateCountSource === 'default' && crateCount === IMPORT_DEFAULT_CRATE_COUNT) {
+                const isThreeDigit = Number.isInteger(weight) && weight >= THREE_DIGIT_MIN && weight <= THREE_DIGIT_MAX;
+                if (isThreeDigit) return { status: 'ok', weight };
+                // 不满足 R1 -> 依次尝试各校正器
+                for (const corrector of IMPORT_CORRECTORS) {
+                    const corrected = corrector({ weight, crateCount, crateCountSource, allWeights, idx });
+                    if (corrected != null) return { status: 'corrected', weight: corrected };
+                }
+                return {
+                    status: 'invalid',
+                    weight,
+                    reason: `毛重 ${rawWeight} 不是 ${THREE_DIGIT_MIN}-${THREE_DIGIT_MAX} 之间的整数（皮框数使用默认值 ${IMPORT_DEFAULT_CRATE_COUNT}）`
+                };
+            }
+            // 非默认皮框数：不做三位数约束，直接导入
+            return { status: 'ok', weight };
+        }
+
+        /**
+         * 纯函数：将 OCR items 解析为最终导入结果，不触碰 DOM。
+         * @returns {{rows:Array, correctedRows:Array, invalidRows:Array, importedCount:number}}
+         */
+        function processImportItems(items, crateWeight) {
+            const allWeights = items.map(it => num(it.weight));
+            const rows = [];
+            const correctedRows = [];
+            const invalidRows = [];
+            let importedCount = 0;
+
+            items.forEach((item, idx) => {
+                const rawWeight = item.weight;
+                const { count: crateCount, source: crateCountSource } = resolveCrateCount(item.tare);
+                const result = classifyImportRow(rawWeight, crateCount, crateCountSource, allWeights, idx);
+
+                switch (result.status) {
+                    case 'empty':
+                        return;                                       // 空行跳过
+                    case 'invalid':
+                        invalidRows.push({
+                            index: item.index ?? (idx + 1),
+                            weight: rawWeight,
+                            crateCount,
+                            reason: result.reason
+                        });
+                        return;
+                    case 'corrected':
+                        correctedRows.push({
+                            index: item.index ?? (idx + 1),
+                            original: rawWeight,
+                            corrected: result.weight,
+                            crateCount
+                        });
+                        break;                                         // 继续走下方导入逻辑（用校正值）
+                    case 'ok':
+                    default:
+                        break;
+                }
+
+                const weight = result.weight;
+                const crateWeightTotal = crateCount * crateWeight;
+                const netWeight = weight - crateWeightTotal;
+                const avgNetWeight = crateCount > 0 ? (netWeight / crateCount) : 0;
+                rows.push({ grossWeight: weight, crateCount: crateCount, category: calculateCategory(avgNetWeight) });
+                importedCount++;
+            });
+
+            return { rows, correctedRows, invalidRows, importedCount };
+        }
+
+        /**
+         * 将列表按 limit 截断，生成「其余 N 条未显示」提示（消除重复拼接逻辑）。
+         * @returns {{body:string, more:string}}
+         */
+        function formatLimitedList(rows, fmt, limit) {
+            const shown = rows.slice(0, limit);
+            const hidden = Math.max(0, rows.length - shown.length);
+            const NL = String.fromCharCode(10); // 真实换行符，避免单引号字符串中 \n / ${} 不生效
+            return {
+                body: shown.map(fmt).join(NL),
+                more: hidden > 0 ? (NL + '其余 ' + hidden + ' 条未显示') : ''
+            };
+        }
+
+        /** 导入结果汇总弹窗：校正记录 + 失败记录（均最多 MAX_REPORT_ROWS 条）+ 成功导入数。 */
+        function showImportReport(importedCount, correctedRows, invalidRows) {
+            const skippedCount = invalidRows.length;
+            const correctedCount = correctedRows.length;
+            if (skippedCount === 0 && correctedCount === 0) {
+                alert(`已成功填充 ${importedCount} 条OCR识别记录到统计表格！`);
+                return;
+            }
+            let msg = '';
+            if (correctedCount > 0) {
+                const list = formatLimitedList(correctedRows,
+                    r => `· 第 ${r.index} 行：毛重 ${r.original} 已自动校正为 ${r.corrected}（依据相邻行上下文，皮框数默认 ${IMPORT_DEFAULT_CRATE_COUNT}）`,
+                    MAX_REPORT_ROWS);
+                msg += `已自动校正 ${correctedCount} 条记录（采用校正值导入，不写入错误值）：\n${list.body}${list.more}\n`;
+            }
+            if (skippedCount > 0) {
+                const list = formatLimitedList(invalidRows,
+                    r => `· 第 ${r.index} 行：毛重=${r.weight}，皮框数=${r.crateCount}\n    原因：${r.reason}`,
+                    MAX_REPORT_ROWS);
+                msg += `跳过 ${skippedCount} 条未通过校验的记录（不写入表格）：\n失败记录（最多显示 ${MAX_REPORT_ROWS} 条）：\n${list.body}${list.more}\n`;
+            }
+            msg += `\n成功导入 ${importedCount} 条记录。`;
+            alert(msg);
+        }
+        function formatDate(d) {
+            if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+        }
+
+        // 解析中文/分隔符日期为 Date；无法解析返回 null
+        function parseChineseDate(str) {
+            if (!str) return null;
+            const s = String(str).trim();
+            let m = s.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日?/);
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+            m = s.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        // 属性安全的 HTML 转义（用于拼进属性值）
+        function escapeAttr(text) {
+            return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // 通用剪贴板复制（带 execCommand 降级）
+        function copyTextToClipboard(text, okMsg) {
+            const fallback = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) { /* 忽略 */ }
+                document.body.removeChild(ta);
+                if (okMsg) alert(okMsg);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => { if (okMsg) alert(okMsg); }).catch(fallback);
+            } else {
+                fallback();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
             renderTabs();
@@ -651,6 +1042,11 @@
             updateHeaderFields();
             recalcAllCategories();
             initOCRPanel();
+            initSyncPanel();
+            // 若开启自动同步，打开页面即拉取云端最新数据（云端为权威来源）
+            if (isAutoSyncEnabled()) {
+                githubPull();
+            }
         });
 
         // OCR 面板初始化
@@ -693,6 +1089,20 @@
                 document.getElementById('doubaoModel').value = savedDoubaoModel;
             }
 
+            // 恢复调用方式（代理 / 直连）并绑定切换事件
+            const savedMode = localStorage.getItem('doubaoMode') || 'proxy';
+            const modeRadio = document.querySelector('input[name="doubaoMode"][value="' + savedMode + '"]');
+            if (modeRadio) modeRadio.checked = true;
+            applyDoubaoModeUI(savedMode);
+            document.querySelectorAll('input[name="doubaoMode"]').forEach(r => {
+                r.addEventListener('change', function() {
+                    if (this.checked) {
+                        localStorage.setItem('doubaoMode', this.value);
+                        applyDoubaoModeUI(this.value);
+                    }
+                });
+            });
+
             // 豆包配置变更保存
             document.getElementById('doubaoApiUrl').addEventListener('change', function() {
                 localStorage.setItem('doubaoApiUrl', this.value);
@@ -703,22 +1113,35 @@
             document.getElementById('doubaoModel').addEventListener('change', function() {
                 localStorage.setItem('doubaoModel', this.value);
             });
+        }
 
-            // 初始化引擎配置显示
-            updateEngineConfigVisibility();
+        // 根据调用方式（代理 / 直连）更新端点输入框的标签、提示与默认值
+        function applyDoubaoModeUI(mode) {
+            const urlInput = document.getElementById('doubaoApiUrl');
+            const label = document.getElementById('apiUrlLabel');
+            const hint = document.getElementById('apiUrlHint');
+            const PROXY_DEFAULT = 'http://127.0.0.1:5000/api/doubao';
+            const ARK_DEFAULT = 'https://ark.cn-beijing.volces.com/api/v3/responses';
+            if (mode === 'direct') {
+                if (label) label.textContent = '方舟 API 端点：';
+                if (hint) hint.textContent = '浏览器直连方舟的地址（默认官方端点），需方舟允许跨域。';
+                if (urlInput && (urlInput.value === '' || urlInput.value === PROXY_DEFAULT)) {
+                    urlInput.value = ARK_DEFAULT;
+                }
+            } else {
+                if (label) label.textContent = 'API 端点（代理）：';
+                if (hint) hint.textContent = '本地代理地址（经后端转发到方舟，彻底避免 CORS）。';
+                if (urlInput && (urlInput.value === '' || urlInput.value === ARK_DEFAULT)) {
+                    urlInput.value = PROXY_DEFAULT;
+                }
+            }
         }
 
         // 切换OCR引擎
         function switchOCREngine(engine) {
             ocrEngine = engine;
-            const tabs = document.querySelectorAll('.ocr-engine-tab');
-            tabs.forEach(t => t.classList.toggle('active', t.dataset.engine === engine));
-            updateEngineConfigVisibility();
-        }
-
-        // 更新引擎配置面板可见性
-        // 当前只有豆包一个引擎，不强制改变显示/隐藏，交给 toggleDoubaoConfig 按钮控制
-        function updateEngineConfigVisibility() {
+            const engineTabs = document.querySelectorAll('.ocr-engine-tab');
+            engineTabs.forEach(t => t.classList.toggle('active', t.dataset.engine === engine));
         }
 
         // 切换豆包配置区显示
@@ -763,37 +1186,273 @@
             }
         }
 
-        // 处理文件选择
+        // ========== 图片方向自动检测与校正 ==========
+        // 读取 JPEG 的 EXIF Orientation 标签（1-8），非 JPEG / 无标签 / 出错返回 0
+        function getExifOrientation(arrayBuffer) {
+            try {
+                const view = new DataView(arrayBuffer);
+                if (view.byteLength < 4 || view.getUint16(0, false) !== 0xFFD8) return 0; // 非 JPEG
+                const length = view.byteLength;
+                let offset = 2;
+                while (offset < length) {
+                    const marker = view.getUint16(offset, false);
+                    offset += 2;
+                    if (marker === 0xFFE1) { // APP1：可能含 EXIF
+                        const segLen = view.getUint16(offset, false);
+                        // EXIF 头固定为 "Exif\0\0"
+                        if (view.getUint32(offset + 2, false) === 0x45786966 &&
+                            view.getUint16(offset + 6, false) === 0x0000) {
+                            const tiffOffset = offset + 8;
+                            const little = view.getUint16(tiffOffset, false) === 0x4949;
+                            const ifdOffset = view.getUint32(tiffOffset + 4, little);
+                            const entries = view.getUint16(tiffOffset + ifdOffset, little);
+                            for (let i = 0; i < entries; i++) {
+                                const entryOff = tiffOffset + ifdOffset + 2 + i * 12;
+                                const tag = view.getUint16(entryOff, little);
+                                if (tag === 0x0112) { // Orientation 标签
+                                    return view.getUint16(entryOff + 8, little);
+                                }
+                            }
+                        }
+                        return 0; // 找到 APP1 但无 Orientation
+                    } else if ((marker & 0xFF00) !== 0xFF00) {
+                        break; // 非标记段，停止
+                    } else if (marker === 0xFFDA) {
+                        break; // 遇到图像数据（SOS），停止
+                    } else {
+                        offset += view.getUint16(offset, false); // 跳过本段
+                    }
+                }
+            } catch (e) {
+                console.warn('读取 EXIF 方向失败：', e);
+            }
+            return 0;
+        }
+
+        // 根据 EXIF Orientation(1-8) + 手动旋转(0/90/180/270) 将图片绘制到 canvas，返回校正后的 dataURL
+        function correctImageOrientation(srcImg, exifOrientation, manualRotation) {
+            const o = exifOrientation || 1;
+            const w = srcImg.naturalWidth;
+            const h = srcImg.naturalHeight;
+            // 第一步：按 EXIF 变换得到"正向"中间图
+            const swap = (o >= 5 && o <= 8); // 5/6/7/8 需要交换宽高
+            const c1 = document.createElement('canvas');
+            c1.width = swap ? h : w;
+            c1.height = swap ? w : h;
+            const x1 = c1.getContext('2d');
+            x1.save();
+            x1.translate(c1.width / 2, c1.height / 2);
+            let ang = 0, sx = 1, sy = 1;
+            switch (o) {
+                case 2: sx = -1; break;            // 水平翻转
+                case 3: ang = Math.PI; break;       // 旋转180°
+                case 4: sy = -1; break;             // 垂直翻转
+                case 5: ang = Math.PI / 2; sx = -1; break;
+                case 6: ang = Math.PI / 2; break;   // 顺时针90°
+                case 7: ang = Math.PI / 2; sy = -1; break;
+                case 8: ang = -Math.PI / 2; break;  // 逆时针90°
+                default: break;
+            }
+            x1.rotate(ang);
+            x1.scale(sx, sy);
+            x1.drawImage(srcImg, -w / 2, -h / 2, w, h);
+            x1.restore();
+
+            // 第二步：叠加手动旋转（兜底非 EXIF 的极端方向）
+            if (!manualRotation) return c1.toDataURL('image/jpeg', 0.92);
+            const sw = (manualRotation === 90 || manualRotation === 270);
+            const c2 = document.createElement('canvas');
+            c2.width = sw ? c1.height : c1.width;
+            c2.height = sw ? c1.width : c1.height;
+            const x2 = c2.getContext('2d');
+            x2.save();
+            x2.translate(c2.width / 2, c2.height / 2);
+            x2.rotate(manualRotation === 90 ? Math.PI / 2 : manualRotation === 180 ? Math.PI : -Math.PI / 2);
+            x2.drawImage(c1, -c1.width / 2, -c1.height / 2, c1.width, c1.height);
+            x2.restore();
+            return c2.toDataURL('image/jpeg', 0.92);
+        }
+
+        // EXIF Orientation 含义（用于展示"已自动校正"结果）
+        const EXIF_ORIENTATION_DESC = {
+            1: '正向（无需校正）',
+            2: '水平翻转',
+            3: '旋转180°（倒置）',
+            4: '垂直翻转',
+            5: '水平翻转+顺时针90°',
+            6: '顺时针90°（侧置）',
+            7: '水平翻转+逆时针90°',
+            8: '逆时针90°（侧置）'
+        };
+
+        // 对单张图片执行方向检测 + 校正，结果写回 entry.dataUrl
+        function processImageOrientation(entry, idx, slot) {
+            const readBuf = new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = e => res(e.target.result);
+                r.onerror = rej;
+                r.readAsArrayBuffer(entry.file);
+            });
+            const readUrl = new Promise((res, rej) => {
+                const r = new FileReader();
+                r.onload = e => res(e.target.result);
+                r.onerror = rej;
+                r.readAsDataURL(entry.file);
+            });
+            Promise.all([readBuf, readUrl]).then(([buf, dataUrl]) => {
+                entry.rawDataUrl = dataUrl;
+                entry.exifOrientation = getExifOrientation(buf);
+                drawOrientationResult(entry, idx, slot);
+            }).catch(err => {
+                console.error('图片方向检测失败：', err);
+                entry.dataUrl = entry.rawDataUrl;
+                renderPreviewSlot(entry, idx, slot);
+            });
+        }
+
+        // 按当前 exifOrientation + manualRotation 绘制校正后图片并渲染预览
+        function drawOrientationResult(entry, idx, slot) {
+            const img = new Image();
+            img.onload = () => {
+                entry.dataUrl = correctImageOrientation(img, entry.exifOrientation, entry.manualRotation);
+                entry.corrected = entry.exifOrientation !== 1 || entry.manualRotation !== 0;
+                renderPreviewSlot(entry, idx, slot);
+            };
+            img.onerror = () => {
+                entry.dataUrl = entry.rawDataUrl;
+                renderPreviewSlot(entry, idx, slot);
+            };
+            img.src = entry.rawDataUrl;
+        }
+
+        // 渲染单张预览：校正后图片 + 方向状态 + 手动旋转按钮（= 校正后的输出结果）
+        function renderPreviewSlot(entry, idx, slot) {
+            slot.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = entry.dataUrl;
+            img.className = 'ocr-preview';
+            img.style.maxHeight = '90px';
+            slot.appendChild(img);
+
+            const label = document.createElement('div');
+            label.className = 'text-muted';
+            label.style.fontSize = '11px';
+            label.style.marginTop = '4px';
+            label.textContent = `${idx + 1}. ${entry.name}`; // textContent 避免文件名 XSS
+            slot.appendChild(label);
+
+            const status = document.createElement('div');
+            status.style.fontSize = '11px';
+            status.style.marginTop = '2px';
+            if (entry.corrected) {
+                status.className = 'text-success';
+                if (entry.manualRotation) {
+                    const desc = EXIF_ORIENTATION_DESC[entry.exifOrientation] || '未知';
+                    status.textContent = `✅ 已校正（EXIF: ${desc} + 手动${entry.manualRotation}°）`;
+                } else {
+                    status.textContent = `✅ 已自动校正：${EXIF_ORIENTATION_DESC[entry.exifOrientation] || '未知'}`;
+                }
+            } else {
+                status.className = 'text-muted';
+                status.textContent = 'ℹ️ 方向正常';
+            }
+            slot.appendChild(status);
+
+            // 手动旋转（EXIF 未记录方向的极端倒置/侧置可手动校正）
+            const btnRow = document.createElement('div');
+            btnRow.className = 'btn-group btn-group-sm mt-1';
+            const left = document.createElement('button');
+            left.className = 'btn btn-outline-secondary';
+            left.style.fontSize = '11px';
+            left.textContent = '↺ 左转';
+            left.onclick = (ev) => { ev.stopPropagation(); rotateEntry(entry, idx, slot, -90); };
+            const right = document.createElement('button');
+            right.className = 'btn btn-outline-secondary';
+            right.style.fontSize = '11px';
+            right.textContent = '↻ 右转';
+            right.onclick = (ev) => { ev.stopPropagation(); rotateEntry(entry, idx, slot, 90); };
+            btnRow.appendChild(left);
+            btnRow.appendChild(right);
+            slot.appendChild(btnRow);
+        }
+
+        // 手动旋转：累计角度后基于原始图重绘（叠加 EXIF 校正）
+        function rotateEntry(entry, idx, slot, delta) {
+            entry.manualRotation = ((entry.manualRotation + delta) % 360 + 360) % 360;
+            const img = new Image();
+            img.onload = () => {
+                entry.dataUrl = correctImageOrientation(img, entry.exifOrientation, entry.manualRotation);
+                entry.corrected = entry.exifOrientation !== 1 || entry.manualRotation !== 0;
+                renderPreviewSlot(entry, idx, slot);
+            };
+            img.src = entry.rawDataUrl;
+        }
+
+        // 从豆包 Responses API 返回体中提取文本（兼容多种返回结构），OCR 文本提取复用
+        function extractDoubaoText(rawResult) {
+            try {
+                if (rawResult.output && Array.isArray(rawResult.output) && rawResult.output.length > 0) {
+                    for (const out of rawResult.output) {
+                        if (out.content && Array.isArray(out.content)) {
+                            for (const c of out.content) {
+                                if (c.text) return c.text;
+                            }
+                        }
+                    }
+                }
+                if (rawResult.output_text) return rawResult.output_text;
+                if (rawResult.choices && Array.isArray(rawResult.choices) && rawResult.choices.length > 0) {
+                    const m = rawResult.choices[0].message;
+                    if (m && m.content) return m.content;
+                }
+                if (rawResult.content) {
+                    return typeof rawResult.content === 'string' ? rawResult.content : JSON.stringify(rawResult.content);
+                }
+            } catch (e) {
+                console.warn('解析豆包返回文本失败：', e);
+            }
+            return '';
+        }
+
+        // 处理文件选择（含图片方向自动检测与校正）
         function handleFileSelection(files) {
-            ocrFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-            
+            const imageFiles = Array.from(files || []).filter(f => f && f.type && f.type.startsWith('image/'));
             const preview = document.getElementById('ocrFilePreview');
             const startBtn = document.getElementById('ocrStartBtn');
-            
-            if (ocrFiles.length === 0) {
+
+            if (imageFiles.length === 0) {
+                ocrFiles = [];
                 preview.innerHTML = '';
                 startBtn.disabled = true;
                 showOCRStatus('请选择有效的图片文件', 'error');
                 return;
             }
 
-            // 显示预览
-            preview.innerHTML = `<div class="mt-2 text-muted">已选择 ${ocrFiles.length} 张图片：</div>`;
-            ocrFiles.forEach((file, idx) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML += `
-                        <div class="d-inline-block m-2 text-center" style="width:120px;">
-                            <img src="${e.target.result}" class="ocr-preview" style="max-height:80px;">
-                            <div class="text-muted" style="font-size:11px; margin-top:4px;">${idx + 1}. ${file.name}</div>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
+            ocrFiles = imageFiles.map(f => ({
+                file: f,
+                name: f.name,
+                rawDataUrl: null,
+                dataUrl: null,
+                exifOrientation: 0,
+                manualRotation: 0,
+                corrected: false
+            }));
+
+            preview.innerHTML = `<div class="mt-2 text-muted">已选择 ${ocrFiles.length} 张图片，正在自动检测方向…</div>`;
+            // 预占位，保证与选择顺序一致
+            const slots = [];
+            ocrFiles.forEach((entry, idx) => {
+                const slot = document.createElement('div');
+                slot.className = 'd-inline-block m-2 text-center align-top';
+                slot.style.width = '160px';
+                slot.textContent = '检测中...';
+                preview.appendChild(slot);
+                slots.push(slot);
+                processImageOrientation(entry, idx, slot);
             });
 
             startBtn.disabled = false;
-            showOCRStatus(`已选择 ${ocrFiles.length} 张图片，点击"开始识别"按钮进行识别`, 'success');
+            showOCRStatus(`已选择 ${ocrFiles.length} 张图片，已尝试自动校正方向，点击"开始识别"按钮进行识别`, 'success');
         }
 
         // 显示OCR状态
@@ -802,7 +1461,7 @@
             status.className = 'ocr-status ' + type;
             
             if (type === 'loading') {
-                status.innerHTML = `<div class="ocr-spinner"></div>${message}`;
+                status.innerHTML = `<div class="ocr-spinner"></div>${escapeHtml(message)}`;
             } else {
                 status.textContent = message;
             }
@@ -859,12 +1518,13 @@
 
         function recalcAllCategories() {
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
+            const R = readRanges();
             rows.forEach(row => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const avgNetWeight = row.crateCount > 0 ? (netWeight / row.crateCount) : 0;
-                row.category = calculateCategory(avgNetWeight);
+                const crateWeightTotal = num(row.crateCount) * crateWeight;
+                const netWeight = num(row.grossWeight) - crateWeightTotal;
+                const avgNetWeight = num(row.crateCount) > 0 ? (netWeight / num(row.crateCount)) : 0;
+                row.category = calculateCategory(avgNetWeight, R);
             });
             saveData();
             renderTable();
@@ -890,24 +1550,22 @@
         function loadData() {
             const saved = localStorage.getItem('bullfrogWeightSystem');
             if (saved) {
-                const data = JSON.parse(saved);
-                tabs = data.tabs || {};
-                currentTabId = data.currentTabId || 1;
-                activeTabId = data.activeTabId || 1;
-                document.getElementById('crateWeight').value = data.crateWeight || 2;
-                if (data.ranges) {
-                    document.getElementById('range_dawa_min').value = data.ranges.dawa_min ?? 24.7;
-                    document.getElementById('range_dawa_max').value = data.ranges.dawa_max ?? 26.5;
-                    document.getElementById('range_zhongwa_min').value = data.ranges.zhongwa_min ?? 22;
-                    document.getElementById('range_zhongwa_max').value = data.ranges.zhongwa_max ?? 24.5;
-                    document.getElementById('range_xiaowa_min').value = data.ranges.xiaowa_min ?? 19.5;
-                    document.getElementById('range_xiaowa_max').value = data.ranges.xiaowa_max ?? 21.5;
-                    document.getElementById('range_xiaoxiaowa_min').value = data.ranges.xiaoxiaowa_min ?? 15;
-                    document.getElementById('range_xiaoxiaowa_max').value = data.ranges.xiaoxiaowa_max ?? 18;
+                try {
+                    const data = JSON.parse(saved);
+                    tabs = (data && data.tabs) ? data.tabs : {};
+                    currentTabId = data.currentTabId || 1;
+                    activeTabId = data.activeTabId || 1;
+                    if (data.crateWeight != null) {
+                        document.getElementById('crateWeight').value = num(data.crateWeight, 2);
+                    }
+                    if (data.ranges) applyRanges(data.ranges);
+                } catch (e) {
+                    console.error('读取本地数据失败，已重置：', e);
+                    tabs = {};
                 }
             }
             if (Object.keys(tabs).length === 0) {
-                tabs[1] = { name: '单据1', rows: [], farmer: '', captain: '', driver: '', driverPhone: '', plateNumber: '', spec: '' };
+                tabs[1] = { name: '单据1', rows: [], farmer: '', captain: '', driver: '', driverPhone: '', plateNumber: '', spec: '', date: '' };
                 activeTabId = 1;
             }
         }
@@ -922,25 +1580,27 @@
             document.getElementById('specName').value = tab?.spec || '';
         }
 
-        function saveData() {
-            const ranges = {
-                dawa_min: parseFloat(document.getElementById('range_dawa_min').value) || 0,
-                dawa_max: parseFloat(document.getElementById('range_dawa_max').value) || 0,
-                zhongwa_min: parseFloat(document.getElementById('range_zhongwa_min').value) || 0,
-                zhongwa_max: parseFloat(document.getElementById('range_zhongwa_max').value) || 0,
-                xiaowa_min: parseFloat(document.getElementById('range_xiaowa_min').value) || 0,
-                xiaowa_max: parseFloat(document.getElementById('range_xiaowa_max').value) || 0,
-                xiaoxiaowa_min: parseFloat(document.getElementById('range_xiaoxiaowa_min').value) || 0,
-                xiaoxiaowa_max: parseFloat(document.getElementById('range_xiaoxiaowa_max').value) || 0
-            };
-            const data = {
+        // 收集当前完整状态（用于本地存储与云端同步）
+        function buildState() {
+            return {
                 tabs: tabs,
                 currentTabId: currentTabId,
                 activeTabId: activeTabId,
-                crateWeight: parseFloat(document.getElementById('crateWeight').value) || 2,
-                ranges: ranges
+                crateWeight: num(document.getElementById('crateWeight').value, 2),
+                ranges: readRanges(),
+                _syncedAt: new Date().toISOString()
             };
-            localStorage.setItem('bullfrogWeightSystem', JSON.stringify(data));
+        }
+
+        function saveData() {
+            const data = buildState();
+            try {
+                localStorage.setItem('bullfrogWeightSystem', JSON.stringify(data));
+            } catch (e) {
+                console.error('保存失败（可能超出本地存储限制）：', e);
+                alert('数据保存失败：本地存储空间不足或不可用，请检查浏览器设置。');
+            }
+            scheduleAutoSync();
         }
 
         // 渲染标签页
@@ -951,7 +1611,7 @@
                 const tab = tabs[tabId];
                 const tabElement = document.createElement('button');
                 tabElement.className = `tab ${parseInt(tabId) === activeTabId ? 'active' : ''}`;
-                tabElement.innerHTML = `<span class="tab-name" ondblclick="editTabName(event, ${tabId})" style="cursor: pointer;">${tab.name}</span> <span class="tab-close" onclick="deleteTab(event, ${tabId})">×</span>`;
+                tabElement.innerHTML = `<span class="tab-name" ondblclick="editTabName(event, ${tabId})" style="cursor: pointer;">${escapeHtml(tab.name)}</span> <span class="tab-close" onclick="deleteTab(event, ${tabId})">×</span>`;
                 tabElement.onclick = (e) => {
                     if (!e.target.classList.contains('tab-close') && !e.target.classList.contains('tab-name')) {
                         switchTab(parseInt(tabId));
@@ -1093,22 +1753,15 @@
             }
         }
 
-        function calculateCategory(avgWeight) {
-            // 读取页面四类蛙区间配置
-            const dawaMin = parseFloat(document.getElementById('range_dawa_min').value) || 0;
-            const dawaMax = parseFloat(document.getElementById('range_dawa_max').value) || 0;
-            const zhongwaMin = parseFloat(document.getElementById('range_zhongwa_min').value) || 0;
-            const zhongwaMax = parseFloat(document.getElementById('range_zhongwa_max').value) || 0;
-            const xiaowaMin = parseFloat(document.getElementById('range_xiaowa_min').value) || 0;
-            const xiaowaMax = parseFloat(document.getElementById('range_xiaowa_max').value) || 0;
-            const xiaoxiaowaMin = parseFloat(document.getElementById('range_xiaoxiaowa_min').value) || 0;
-            const xiaoxiaowaMax = parseFloat(document.getElementById('range_xiaoxiaowa_max').value) || 0;
+        function calculateCategory(avgWeight, ranges) {
+            // 读取页面四类蛙区间配置（可传入已读取的 ranges 避免重复读 DOM）
+            const R = ranges || readRanges();
 
             // 按区间匹配对应蛙类
-            if (avgWeight >= dawaMin && avgWeight <= dawaMax) return '大蛙';
-            if (avgWeight >= zhongwaMin && avgWeight <= zhongwaMax) return '中蛙';
-            if (avgWeight >= xiaowaMin && avgWeight <= xiaowaMax) return '小蛙';
-            if (avgWeight >= xiaoxiaowaMin && avgWeight <= xiaoxiaowaMax) return '小小蛙';
+            if (avgWeight >= R.dawa_min && avgWeight <= R.dawa_max) return '大蛙';
+            if (avgWeight >= R.zhongwa_min && avgWeight <= R.zhongwa_max) return '中蛙';
+            if (avgWeight >= R.xiaowa_min && avgWeight <= R.xiaowa_max) return '小蛙';
+            if (avgWeight >= R.xiaoxiaowa_min && avgWeight <= R.xiaoxiaowa_max) return '小小蛙';
 
             // 数值不在任何区间 → 归类为特殊行，后续由refineSpecialClassifications二次修正
             return '特殊行';
@@ -1120,15 +1773,15 @@
             const rows = tabs[activeTabId]?.rows || [];
             if (rows.length === 0) return;
 
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
 
             // 收集所有非特殊行的参考数据 { avgWeight, category }
             const referenceRows = rows
-                .map((row, idx) => {
-                    const crateWeightTotal = row.crateCount * crateWeight;
-                    const netWeight = row.grossWeight - crateWeightTotal;
-                    const avgWeight = row.crateCount > 0 ? (netWeight / row.crateCount) : 0;
-                    return { idx, avgWeight, category: row.category };
+                .map((row) => {
+                    const crateWeightTotal = num(row.crateCount) * crateWeight;
+                    const netWeight = num(row.grossWeight) - crateWeightTotal;
+                    const avgWeight = num(row.crateCount) > 0 ? (netWeight / num(row.crateCount)) : 0;
+                    return { avgWeight, category: row.category };
                 })
                 .filter(r => r.category !== '特殊行' && r.category !== '次蛙');
 
@@ -1136,12 +1789,12 @@
 
             // 对每个特殊行，找最近的参考行分类
             let changed = false;
-            rows.forEach((row, idx) => {
+            rows.forEach((row) => {
                 if (row.category !== '特殊行') return;
 
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const avgWeight = row.crateCount > 0 ? (netWeight / row.crateCount) : 0;
+                const crateWeightTotal = num(row.crateCount) * crateWeight;
+                const netWeight = num(row.grossWeight) - crateWeightTotal;
+                const avgWeight = num(row.crateCount) > 0 ? (netWeight / num(row.crateCount)) : 0;
 
                 // 找最近的参考行
                 let closestCat = '特殊行';
@@ -1169,18 +1822,15 @@
         function renderTable() {
             const tbody = document.getElementById('tableBody');
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
 
             tbody.innerHTML = '';
             rows.forEach((row, index) => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${index + 1}</td>
-                    <td class="editable-cell" onclick="editCell(${index}, 'grossWeight', this)">${row.grossWeight.toFixed(2)}</td>
-                    <td class="editable-cell" onclick="editCell(${index}, 'crateCount', this)">${row.crateCount}</td>
+                    <td class="editable-cell" onclick="editCell(${index}, 'grossWeight', this)">${round2(num(row.grossWeight))}</td>
+                    <td class="editable-cell" onclick="editCell(${index}, 'crateCount', this)">${num(row.crateCount)}</td>
                     <td>
                         <select class="form-select form-select-sm" onchange="updateCategory(${index}, this.value)">
                             <option value="大蛙" ${row.category === '大蛙' ? 'selected' : ''}>大蛙</option>
@@ -1202,7 +1852,7 @@
             const currentValue = tabs[activeTabId].rows[index][field];
             const input = document.createElement('input');
             input.type = 'number';
-            input.value = currentValue;
+            input.value = (currentValue != null) ? currentValue : '';
             input.className = 'form-control form-control-sm';
             input.style.width = '80px';
             input.min = '0';
@@ -1214,15 +1864,15 @@
             input.select();
 
             input.onblur = function() {
-                const newValue = parseFloat(this.value) || 0;
+                const newValue = num(this.value);
                 tabs[activeTabId].rows[index][field] = newValue;
 
                 // 数值变化后自动重新计算分类
-                const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+                const crateWeight = num(document.getElementById('crateWeight').value, 2);
                 const row = tabs[activeTabId].rows[index];
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const avgNetWeight = row.crateCount > 0 ? (netWeight / row.crateCount) : 0;
+                const crateWeightTotal = num(row.crateCount) * crateWeight;
+                const netWeight = num(row.grossWeight) - crateWeightTotal;
+                const avgNetWeight = num(row.crateCount) > 0 ? (netWeight / num(row.crateCount)) : 0;
                 row.category = calculateCategory(avgNetWeight);
 
                 // 二次修正特殊行
@@ -1258,7 +1908,7 @@
         // 一键复制表格（复制汇总统计 + 导出Excel文件）
         function exportTableToExcel() {
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
             const farmer = tabs[activeTabId]?.farmer || '';
             const captain = tabs[activeTabId]?.captain || '';
             const driver = tabs[activeTabId]?.driver || '';
@@ -1266,37 +1916,10 @@
             const plateNumber = tabs[activeTabId]?.plateNumber || '';
             const spec = tabs[activeTabId]?.spec || '';
 
+            const stats = computeCategoryStats(rows, crateWeight);
+            const { categories, totalRows, totalCrates, totalGross, totalCrateWeight, totalNet, totalAvgNet } = stats;
+
             // 1. 先复制汇总统计到剪贴板
-            const categories = {
-                '大蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '中蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '次蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '特殊行': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 }
-            };
-
-            rows.forEach(row => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const cat = row.category || '特殊行';
-                if (categories[cat]) {
-                    categories[cat].rows++;
-                    categories[cat].totalCrates += row.crateCount;
-                    categories[cat].totalGross += row.grossWeight;
-                    categories[cat].totalCrateWeight += crateWeightTotal;
-                    categories[cat].totalNet += netWeight;
-                }
-            });
-
-            const validRows = rows.filter(r => r.category !== '次蛙');
-            const totalRows = validRows.length;
-            const totalCrates = validRows.reduce((sum, row) => sum + row.crateCount, 0);
-            const totalGross = validRows.reduce((sum, row) => sum + row.grossWeight, 0);
-            const totalCrateWeight = totalCrates * crateWeight;
-            const totalNet = totalGross - totalCrateWeight;
-            const totalAvgNet = totalCrates > 0 ? (totalNet / totalCrates) : 0;
-
             let summaryText = `养户名称：${farmer}\t队长名称：${captain}\t皮框单重：${crateWeight} 斤/个\t规格：${spec}\n`;
             summaryText += '分类\t行数\t总皮框数\t总毛重(斤)\t总皮重(斤)\t总净重(斤)\t平均单框净重(斤)\n';
 
@@ -1304,30 +1927,19 @@
             order.forEach(cat => {
                 const data = categories[cat];
                 const avgNet = data.totalCrates > 0 ? (data.totalNet / data.totalCrates) : 0;
-                summaryText += `${cat}\t${data.rows}\t${data.totalCrates}\t${data.totalGross.toFixed(2)}\t${data.totalCrateWeight.toFixed(2)}\t${data.totalNet.toFixed(2)}\t${avgNet.toFixed(2)}\n`;
+                summaryText += `${cat}\t${data.rows}\t${data.totalCrates}\t${round2(data.totalGross)}\t${round2(data.totalCrateWeight)}\t${round2(data.totalNet)}\t${round2(avgNet)}\n`;
             });
 
-            summaryText += `全部汇总\t${totalRows}\t${totalCrates}\t${totalGross.toFixed(2)}\t${totalCrateWeight.toFixed(2)}\t${totalNet.toFixed(2)}\t${totalAvgNet.toFixed(2)}\n`;
+            summaryText += `全部汇总\t${totalRows}\t${totalCrates}\t${round2(totalGross)}\t${round2(totalCrateWeight)}\t${round2(totalNet)}\t${round2(totalAvgNet)}\n`;
 
-            navigator.clipboard.writeText(summaryText).then(() => {
-                // 2. 再下载Excel
-                downloadExcel(rows, crateWeight, farmer, captain, driver, driverPhone, plateNumber, spec);
-                alert('汇总统计已复制到剪贴板，Excel文件已生成！');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = summaryText;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                downloadExcel(rows, crateWeight, farmer, captain, driver, driverPhone, plateNumber, spec);
-                alert('汇总统计已复制到剪贴板，Excel文件已生成！');
-            });
+            copyTextToClipboard(summaryText, null);
+            // 2. 再下载 Excel
+            downloadExcel(rows, crateWeight, farmer, captain, driver, driverPhone, plateNumber, spec);
+            alert('汇总统计已复制到剪贴板，Excel文件已生成！');
         }
 
         // 下载Excel文件
         function downloadExcel(rows, crateWeight, farmer, captain, driver, driverPhone, plateNumber, spec) {
-
             const wsData = [];
             wsData.push(['盈盛水产牛蛙收购单']);
             wsData.push([]);
@@ -1340,19 +1952,18 @@
             wsData.push([]);
             wsData.push(['序号', '毛重(斤)', '皮框数', '分类']);
 
-            rows.forEach((row, index) => {
+            (rows || []).forEach((row, index) => {
                 wsData.push([
                     index + 1,
-                    parseFloat(row.grossWeight.toFixed(2)),
-                    row.crateCount,
-                    row.category
+                    round2(num(row.grossWeight)),
+                    num(row.crateCount),
+                    row.category || '特殊行'
                 ]);
             });
 
-            // 底部日期行 + 规格
+            // 底部日期行 + 规格（优先使用识别到的收购日期）
             wsData.push([]);
-            const today = new Date();
-            const dateStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+            const dateStr = formatDate(tabs[activeTabId]?.date ? new Date(tabs[activeTabId].date) : new Date());
             wsData.push(['', '', '', '日期', dateStr]);
             wsData.push(['规格', spec]);
 
@@ -1372,37 +1983,16 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, '明细表格');
 
-            const fileName = `盈盛水产牛蛙收购单_${document.getElementById('farmerName').value || ''}_${document.getElementById('captainName').value || ''}.xlsx`;
+            const fileName = `盈盛水产牛蛙收购单_${tabs[activeTabId]?.farmer || ''}_${tabs[activeTabId]?.captain || ''}.xlsx`;
             XLSX.writeFile(wb, fileName);
         }
 
         // 更新汇总统计
         function updateSummary() {
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
-
-            const categories = {
-                '大蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '中蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '次蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '特殊行': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 }
-            };
-
-            rows.forEach(row => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const cat = row.category || '特殊行';
-
-                if (categories[cat]) {
-                    categories[cat].rows++;
-                    categories[cat].totalCrates += row.crateCount;
-                    categories[cat].totalGross += row.grossWeight;
-                    categories[cat].totalCrateWeight += crateWeightTotal;
-                    categories[cat].totalNet += netWeight;
-                }
-            });
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
+            const stats = computeCategoryStats(rows, crateWeight);
+            const { categories, totalRows, totalCrates, totalGross, totalCrateWeight, totalNet, totalAvgNet } = stats;
 
             const container = document.getElementById('summaryContainer');
             container.innerHTML = '';
@@ -1427,33 +2017,24 @@
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">总毛重：</span>
-                            <span class="summary-value">${data.totalGross.toFixed(2)} 斤</span>
+                            <span class="summary-value">${round2(data.totalGross)} 斤</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">总皮重：</span>
-                            <span class="summary-value">${data.totalCrateWeight.toFixed(2)} 斤</span>
+                            <span class="summary-value">${round2(data.totalCrateWeight)} 斤</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">总净重：</span>
-                            <span class="summary-value">${data.totalNet.toFixed(2)} 斤</span>
+                            <span class="summary-value">${round2(data.totalNet)} 斤</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">平均单框净重：</span>
-                            <span class="summary-value">${avgNet.toFixed(2)} 斤</span>
+                            <span class="summary-value">${round2(avgNet)} 斤</span>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
-
-            // 全部汇总（排除次蛙）
-            const validRows = rows.filter(r => r.category !== '次蛙');
-            const totalRows = validRows.length;
-            const totalCrates = validRows.reduce((sum, row) => sum + row.crateCount, 0);
-            const totalGross = validRows.reduce((sum, row) => sum + row.grossWeight, 0);
-            const totalCrateWeight = totalCrates * crateWeight;
-            const totalNet = totalGross - totalCrateWeight;
-            const totalAvgNet = totalCrates > 0 ? (totalNet / totalCrates) : 0;
 
             const totalCard = document.createElement('div');
             totalCard.className = 'col-12';
@@ -1474,21 +2055,21 @@
                         <div class="col-md-4">
                             <div class="summary-item">
                                 <span class="summary-label">总毛重：</span>
-                                <span class="summary-value">${totalGross.toFixed(2)} 斤</span>
+                                <span class="summary-value">${round2(totalGross)} 斤</span>
                             </div>
                             <div class="summary-item">
                                 <span class="summary-label">总皮重：</span>
-                                <span class="summary-value">${totalCrateWeight.toFixed(2)} 斤</span>
+                                <span class="summary-value">${round2(totalCrateWeight)} 斤</span>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="summary-item">
                                 <span class="summary-label">总净重：</span>
-                                <span class="summary-value">${totalNet.toFixed(2)} 斤</span>
+                                <span class="summary-value">${round2(totalNet)} 斤</span>
                             </div>
                             <div class="summary-item">
                                 <span class="summary-label">平均单框净重：</span>
-                                <span class="summary-value">${totalAvgNet.toFixed(2)} 斤</span>
+                                <span class="summary-value">${round2(totalAvgNet)} 斤</span>
                             </div>
                         </div>
                     </div>
@@ -1503,76 +2084,33 @@
 
         function copySummary() {
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
             const farmer = tabs[activeTabId]?.farmer || '';
             const captain = tabs[activeTabId]?.captain || '';
+            const spec = tabs[activeTabId]?.spec || '';
 
-            const categories = {
-                '大蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '中蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '次蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '特殊行': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 }
-            };
-
-            rows.forEach(row => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const cat = row.category || '特殊行';
-                if (categories[cat]) {
-                    categories[cat].rows++;
-                    categories[cat].totalCrates += row.crateCount;
-                    categories[cat].totalGross += row.grossWeight;
-                    categories[cat].totalCrateWeight += crateWeightTotal;
-                    categories[cat].totalNet += netWeight;
-                }
-            });
-
-            const validRows = rows.filter(r => r.category !== '次蛙');
-            const totalRows = validRows.length;
-            const totalCrates = validRows.reduce((sum, row) => sum + row.crateCount, 0);
-            const totalGross = validRows.reduce((sum, row) => sum + row.grossWeight, 0);
-            const totalCrateWeight = totalCrates * crateWeight;
-            const totalNet = totalGross - totalCrateWeight;
-            const totalAvgNet = totalCrates > 0 ? (totalNet / totalCrates) : 0;
+            const stats = computeCategoryStats(rows, crateWeight);
+            const { categories, totalRows, totalCrates, totalGross, totalCrateWeight, totalNet, totalAvgNet } = stats;
 
             let text = `养户名称：${farmer}\t队长名称：${captain}\t皮框单重：${crateWeight} 斤/个\t规格：${spec}\n`;
             text += '分类\t行数\t总皮框数\t总毛重(斤)\t总皮重(斤)\t总净重(斤)\t平均单框净重(斤)\n';
 
-            // 判断该类别所有汇总数据是否均为 0（或空）
-            function _catIsEmpty(d) {
-                return d.rows === 0 && d.totalCrates === 0 &&
-                    Math.abs(d.totalGross) < 0.001 && Math.abs(d.totalCrateWeight) < 0.001 &&
-                    Math.abs(d.totalNet) < 0.001;
-            }
-
             const order = ['大蛙', '中蛙', '小蛙', '小小蛙', '特殊行', '次蛙'];
             order.forEach(cat => {
                 const data = categories[cat];
-                if (_catIsEmpty(data)) return;              // 跳过空类别
+                if (isCategoryEmpty(data)) return;              // 跳过空类别
                 const avgNet = data.totalCrates > 0 ? (data.totalNet / data.totalCrates) : 0;
-                text += `${cat}\t${data.rows}\t${data.totalCrates}\t${data.totalGross.toFixed(2)}\t${data.totalCrateWeight.toFixed(2)}\t${data.totalNet.toFixed(2)}\t${avgNet.toFixed(2)}\n`;
+                text += `${cat}\t${data.rows}\t${data.totalCrates}\t${round2(data.totalGross)}\t${round2(data.totalCrateWeight)}\t${round2(data.totalNet)}\t${round2(avgNet)}\n`;
             });
 
-            text += `全部汇总\t${totalRows}\t${totalCrates}\t${totalGross.toFixed(2)}\t${totalCrateWeight.toFixed(2)}\t${totalNet.toFixed(2)}\t${totalAvgNet.toFixed(2)}\n`;
+            text += `全部汇总\t${totalRows}\t${totalCrates}\t${round2(totalGross)}\t${round2(totalCrateWeight)}\t${round2(totalNet)}\t${round2(totalAvgNet)}\n`;
 
-            navigator.clipboard.writeText(text).then(() => {
-                alert('汇总表格已复制到剪贴板，可直接粘贴到Excel！');
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('汇总表格已复制到剪贴板，可直接粘贴到Excel！');
-            });
+            copyTextToClipboard(text, '汇总表格已复制到剪贴板，可直接粘贴到Excel！');
         }
 
         function exportToExcel() {
             const rows = tabs[activeTabId]?.rows || [];
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
             const farmer = tabs[activeTabId]?.farmer || '';
             const captain = tabs[activeTabId]?.captain || '';
             const driver = tabs[activeTabId]?.driver || '';
@@ -1580,38 +2118,11 @@
             const plateNumber = tabs[activeTabId]?.plateNumber || '';
             const spec = tabs[activeTabId]?.spec || '';
 
-            const categories = {
-                '大蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '中蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '次蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '小小蛙': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 },
-                '特殊行': { rows: 0, totalCrates: 0, totalGross: 0, totalCrateWeight: 0, totalNet: 0 }
-            };
+            const stats = computeCategoryStats(rows, crateWeight);
+            const { categories, totalRows, totalCrates, totalGross, totalCrateWeight, totalNet, totalAvgNet } = stats;
 
-            rows.forEach(row => {
-                const crateWeightTotal = row.crateCount * crateWeight;
-                const netWeight = row.grossWeight - crateWeightTotal;
-                const cat = row.category || '特殊行';
-                if (categories[cat]) {
-                    categories[cat].rows++;
-                    categories[cat].totalCrates += row.crateCount;
-                    categories[cat].totalGross += row.grossWeight;
-                    categories[cat].totalCrateWeight += crateWeightTotal;
-                    categories[cat].totalNet += netWeight;
-                }
-            });
-
-            const validRows = rows.filter(r => r.category !== '次蛙');
-            const totalRows = validRows.length;
-            const totalCrates = validRows.reduce((sum, row) => sum + row.crateCount, 0);
-            const totalGross = validRows.reduce((sum, row) => sum + row.grossWeight, 0);
-            const totalCrateWeight = totalCrates * crateWeight;
-            const totalNet = totalGross - totalCrateWeight;
-            const totalAvgNet = totalCrates > 0 ? (totalNet / totalCrates) : 0;
-
-            const today = new Date();
-            const dateStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+            // 优先使用识别到的收购日期
+            const dateStr = formatDate(tabs[activeTabId]?.date ? new Date(tabs[activeTabId].date) : new Date());
 
             // 按图片排版生成 Excel 数据
             const wsData = [];
@@ -1624,25 +2135,18 @@
             wsData.push(['', '', '', '', '', '', '']);                                                    // 第7行：空
             wsData.push(['分类', '行数', '总皮框数', '总毛重(斤)', '总皮重(斤)', '总净重(斤)', '平均单框净重(斤)']); // 第8行：表头
 
-            // 判断该类别所有汇总数据是否均为 0（或空）
-            function _catIsEmpty(d) {
-                return d.rows === 0 && d.totalCrates === 0 &&
-                    Math.abs(d.totalGross) < 0.001 && Math.abs(d.totalCrateWeight) < 0.001 &&
-                    Math.abs(d.totalNet) < 0.001;
-            }
-
             const order = ['大蛙', '中蛙', '小蛙', '小小蛙', '特殊行'];
             order.forEach(cat => {
                 const data = categories[cat];
-                if (_catIsEmpty(data)) return;              // 跳过空类别，不计入 Excel
-                const avgNet = data.totalCrates > 0 ? parseFloat((data.totalNet / data.totalCrates).toFixed(2)) : 0;
+                if (isCategoryEmpty(data)) return;              // 跳过空类别，不计入 Excel
+                const avgNet = data.totalCrates > 0 ? round2(data.totalNet / data.totalCrates) : 0;
                 wsData.push([
                     cat,
                     data.rows,
                     data.totalCrates,
-                    parseFloat(data.totalGross.toFixed(2)),
-                    parseFloat(data.totalCrateWeight.toFixed(2)),
-                    parseFloat(data.totalNet.toFixed(2)),
+                    round2(data.totalGross),
+                    round2(data.totalCrateWeight),
+                    round2(data.totalNet),
                     avgNet
                 ]);
             });
@@ -1651,23 +2155,23 @@
                 '全部汇总',
                 totalRows,
                 totalCrates,
-                parseFloat(totalGross.toFixed(2)),
-                parseFloat(totalCrateWeight.toFixed(2)),
-                parseFloat(totalNet.toFixed(2)),
-                parseFloat(totalAvgNet.toFixed(2))
+                round2(totalGross),
+                round2(totalCrateWeight),
+                round2(totalNet),
+                round2(totalAvgNet)
             ]);
 
             // 次蛙放在全部汇总下方（如果为空则跳过）
             const ciData = categories['次蛙'];
-            if (!_catIsEmpty(ciData)) {
-                const ciAvgNet = ciData.totalCrates > 0 ? parseFloat((ciData.totalNet / ciData.totalCrates).toFixed(2)) : 0;
+            if (!isCategoryEmpty(ciData)) {
+                const ciAvgNet = ciData.totalCrates > 0 ? round2(ciData.totalNet / ciData.totalCrates) : 0;
                 wsData.push([
                     '次蛙',
                     ciData.rows,
                     ciData.totalCrates,
-                    parseFloat(ciData.totalGross.toFixed(2)),
-                    parseFloat(ciData.totalCrateWeight.toFixed(2)),
-                    parseFloat(ciData.totalNet.toFixed(2)),
+                    round2(ciData.totalGross),
+                    round2(ciData.totalCrateWeight),
+                    round2(ciData.totalNet),
                     ciAvgNet
                 ]);
             }
@@ -1677,7 +2181,7 @@
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
             // 统一设置对齐方式：标签右对齐、数据左对齐、其余居中
-            const range = XLSX.utils.decode_range(ws['!ref']);
+            const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
             const RIGHT_CELLS = new Set([
                 'A4', 'D4', 'A5', 'D5', 'A6', 'D6', 'F6', 'F17'
             ]);
@@ -1712,7 +2216,7 @@
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, '收购单');
 
-            const fileName = `盈盛水产牛蛙收购单_${document.getElementById('farmerName').value || ''}_${document.getElementById('captainName').value || ''}.xlsx`;
+            const fileName = `盈盛水产牛蛙收购单_${tabs[activeTabId]?.farmer || ''}_${tabs[activeTabId]?.captain || ''}.xlsx`;
             XLSX.writeFile(wb, fileName, { cellStyles: true });
         }
 
@@ -1736,17 +2240,9 @@
                 plateNumber: tab.plateNumber || '',
                 spec: tab.spec || '',
                 rows: tab.rows || [],
-                crateWeight: parseFloat(document.getElementById('crateWeight').value) || 2,
-                ranges: {
-                    dawa_min: parseFloat(document.getElementById('range_dawa_min').value) || 24.7,
-                    dawa_max: parseFloat(document.getElementById('range_dawa_max').value) || 26.5,
-                    zhongwa_min: parseFloat(document.getElementById('range_zhongwa_min').value) || 22,
-                    zhongwa_max: parseFloat(document.getElementById('range_zhongwa_max').value) || 24.5,
-                    xiaowa_min: parseFloat(document.getElementById('range_xiaowa_min').value) || 19.5,
-                    xiaowa_max: parseFloat(document.getElementById('range_xiaowa_max').value) || 21.5,
-                    xiaoxiaowa_min: parseFloat(document.getElementById('range_xiaoxiaowa_min').value) || 15,
-                    xiaoxiaowa_max: parseFloat(document.getElementById('range_xiaoxiaowa_max').value) || 18
-                },
+                crateWeight: num(document.getElementById('crateWeight').value, 2),
+                ranges: readRanges(),
+                date: tabs[activeTabId]?.date || '',
                 savedAt: new Date().toLocaleString('zh-CN')
             };
 
@@ -1756,7 +2252,13 @@
 
         // 打开读取存档模态框
         function loadReceipt() {
-            const savedReceipts = JSON.parse(localStorage.getItem('savedReceipts') || '{}');
+            let savedReceipts;
+            try {
+                savedReceipts = JSON.parse(localStorage.getItem('savedReceipts') || '{}') || {};
+            } catch (e) {
+                console.error('读取存档失败：', e);
+                savedReceipts = {};
+            }
             const listContainer = document.getElementById('savedReceiptsList');
             listContainer.innerHTML = '';
 
@@ -1768,16 +2270,30 @@
                     const receipt = savedReceipts[name];
                     const item = document.createElement('div');
                     item.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
-                    item.innerHTML = `
-                        <div>
-                            <strong>${name}</strong>
-                            <small class="text-muted ms-2">保存于: ${receipt.savedAt}</small>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-primary me-1" onclick="applyReceipt('${name}')">读取</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteSavedReceipt('${name}')">删除</button>
-                        </div>
-                    `;
+
+                    const info = document.createElement('div');
+                    const strong = document.createElement('strong');
+                    strong.textContent = name; // textContent 避免 XSS
+                    const small = document.createElement('small');
+                    small.className = 'text-muted ms-2';
+                    small.textContent = '保存于: ' + (receipt.savedAt || '');
+                    info.appendChild(strong);
+                    info.appendChild(small);
+
+                    const actions = document.createElement('div');
+                    const readBtn = document.createElement('button');
+                    readBtn.className = 'btn btn-sm btn-primary me-1';
+                    readBtn.textContent = '读取';
+                    readBtn.addEventListener('click', () => applyReceipt(name)); // 闭包传参，避免单引号注入
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-sm btn-danger';
+                    delBtn.textContent = '删除';
+                    delBtn.addEventListener('click', () => deleteSavedReceipt(name));
+                    actions.appendChild(readBtn);
+                    actions.appendChild(delBtn);
+
+                    item.appendChild(info);
+                    item.appendChild(actions);
                     listContainer.appendChild(item);
                 });
             }
@@ -1805,16 +2321,7 @@
             document.getElementById('specName').value = receipt.spec || '';
             document.getElementById('crateWeight').value = receipt.crateWeight || 2;
 
-            if (receipt.ranges) {
-                document.getElementById('range_dawa_min').value = receipt.ranges.dawa_min || 24.7;
-                document.getElementById('range_dawa_max').value = receipt.ranges.dawa_max || 26.5;
-                document.getElementById('range_zhongwa_min').value = receipt.ranges.zhongwa_min || 22;
-                document.getElementById('range_zhongwa_max').value = receipt.ranges.zhongwa_max || 24.5;
-                document.getElementById('range_xiaowa_min').value = receipt.ranges.xiaowa_min || 19.5;
-                document.getElementById('range_xiaowa_max').value = receipt.ranges.xiaowa_max || 21.5;
-                document.getElementById('range_xiaoxiaowa_min').value = receipt.ranges.xiaoxiaowa_min || 15;
-                document.getElementById('range_xiaoxiaowa_max').value = receipt.ranges.xiaoxiaowa_max || 18;
-            }
+            applyRanges(receipt.ranges);
 
             // 更新当前单据数据
             tabs[activeTabId].farmer = receipt.farmer || '';
@@ -1825,6 +2332,7 @@
             tabs[activeTabId].spec = receipt.spec || '';
             tabs[activeTabId].rows = receipt.rows || [];
             tabs[activeTabId].name = receipt.name;
+            tabs[activeTabId].date = receipt.date || '';
 
             saveData();
             renderTabs();
@@ -1862,19 +2370,32 @@
             const startBtn = document.getElementById('ocrStartBtn');
             startBtn.disabled = true;
             startBtn.textContent = '⏳ 识别中...';
-
-            await startDoubaoOCR();
-
-            startBtn.disabled = false;
-            startBtn.textContent = '🚀 开始识别';
+            try {
+                await startDoubaoOCR();
+            } catch (err) {
+                console.error('OCR 流程异常：', err);
+                showOCRStatus('识别过程出现异常：' + (err && err.message ? err.message : err), 'error');
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 开始识别';
+            }
         }
 
         // 豆包视觉 OCR 识别（Responses API），支持多张图片
         async function startDoubaoOCR() {
-            const apiUrl = document.getElementById('doubaoApiUrl').value.trim();
+            let apiUrl = document.getElementById('doubaoApiUrl').value.trim();
+            apiUrl = apiUrl.replace(/\blocalhost\b/g, '127.0.0.1');
             const apiKey = document.getElementById('doubaoApiKey').value.trim();
             const model = document.getElementById('doubaoModel').value.trim();
             const parseEnabled = document.getElementById('doubaoParseEnabled').checked;
+
+            // 调用方式：proxy（本地代理转发，免 CORS）/ direct（浏览器直连方舟）
+            const mode = (document.querySelector('input[name="doubaoMode"]:checked') || {}).value
+                || localStorage.getItem('doubaoMode') || 'proxy';
+            const ARK_URL = 'https://ark.cn-beijing.volces.com/api/v3/responses';
+            if (mode === 'direct' && (apiUrl === '' || apiUrl === 'http://127.0.0.1:5000/api/doubao')) {
+                apiUrl = ARK_URL; // 直连模式默认指向方舟官方端点
+            }
 
             if (!apiUrl) {
                 showOCRStatus('请配置豆包API端点', 'error');
@@ -1924,39 +2445,60 @@
 
             // 逐张识别
             for (let i = 0; i < ocrFiles.length; i++) {
-                const file = ocrFiles[i];
-                showOCRStatus(`正在识别第 ${i + 1}/${ocrFiles.length} 张图片（${file.name}），视觉模型推理通常需要10-30秒...`, 'loading');
+                const entry = ocrFiles[i];
+                const file = entry.file;
+                showOCRStatus(`正在识别第 ${i + 1}/${ocrFiles.length} 张图片（${entry.name}），视觉模型推理通常需要10-30秒...`, 'loading');
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 120000);
 
                 try {
-                    const dataUrl = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = e => resolve(e.target.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(file);
-                    });
+                    // 优先使用已自动校正方向后的 dataURL（含 EXIF 校正 + 手动旋转）
+                    let dataUrl = entry.dataUrl;
+                    if (!dataUrl) {
+                        dataUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                    }
 
-                    const requestBody = {
-                        model: model,
-                        input: [
-                            {
-                                role: 'user',
-                                content: [
-                                    { type: 'input_image', image_url: dataUrl },
-                                    { type: 'input_text', text: prompt }
-                                ]
-                            }
-                        ],
-                        temperature: 0.1,
-                        api_key: apiKey,
-                        api_url: 'https://ark.cn-beijing.volces.com/api/v3/responses'
-                    };
+                    // 按调用方式构造请求：代理模式携带 api_key/api_url 由后端转发；直连模式用 Authorization 头直发方舟
+                    let requestHeaders, requestBody;
+                    const inputContent = [
+                        {
+                            role: 'user',
+                            content: [
+                                { type: 'input_image', image_url: dataUrl },
+                                { type: 'input_text', text: prompt }
+                            ]
+                        }
+                    ];
+                    if (mode === 'direct') {
+                        requestHeaders = {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + apiKey
+                        };
+                        requestBody = {
+                            model: model,
+                            input: inputContent,
+                            temperature: 0.1
+                        };
+                    } else {
+                        requestHeaders = { 'Content-Type': 'application/json' };
+                        requestBody = {
+                            model: model,
+                            input: inputContent,
+                            temperature: 0.1,
+                            api_key: apiKey,
+                            api_url: ARK_URL
+                        };
+                    }
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: requestHeaders,
                         body: JSON.stringify(requestBody),
                         signal: controller.signal
                     });
@@ -1975,38 +2517,15 @@
                     }
                     console.log(`第${i + 1}张图片豆包返回:`, JSON.stringify(rawResult).slice(0, 500));
 
-                    // 从响应中提取文本，兼容多种返回结构
-                    let content = '';
-                    try {
-                        if (rawResult.output && rawResult.output.length > 0) {
-                            for (const out of rawResult.output) {
-                                if (out.content && Array.isArray(out.content)) {
-                                    for (const c of out.content) {
-                                        if (c.text) { content = c.text; break; }
-                                    }
-                                }
-                                if (content) break;
-                            }
-                        }
-                        if (!content && rawResult.output_text) {
-                            content = rawResult.output_text;
-                        }
-                        if (!content && rawResult.choices && rawResult.choices.length > 0) {
-                            content = rawResult.choices[0].message.content;
-                        }
-                        if (!content && rawResult.content) {
-                            content = typeof rawResult.content === 'string' ? rawResult.content : JSON.stringify(rawResult.content);
-                        }
-                    } catch (e) {
-                        throw new Error('无法解析豆包返回结构：' + JSON.stringify(rawResult).slice(0, 500));
-                    }
+                    // 从响应中提取文本，兼容多种返回结构（复用统一解析函数）
+                    let content = extractDoubaoText(rawResult);
 
                     if (!content) {
                         throw new Error(`第${i + 1}张图片模型返回内容为空`);
                     }
 
                     allContents.push(content);
-                    fileNames.push(file.name);
+                    fileNames.push(entry.name);
 
                     // 清理markdown代码块包裹
                     let cleaned = String(content).trim();
@@ -2025,13 +2544,13 @@
                     }
 
                     structured = normalizeBullfrogStructured(structured);
-                    structured._source_file = file.name;
+                    structured._source_file = entry.name;
                     allStructured.push(structured);
 
                 } catch (error) {
                     clearTimeout(timeoutId);
                     console.error(`第${i + 1}张图片识别错误:`, error);
-                    errors.push(`${file.name}: ${error.message}`);
+                    errors.push(`${entry.name}: ${error.message}`);
                 }
             }
 
@@ -2275,7 +2794,7 @@
                 items.forEach(item => {
                     const weight = item.weight !== '' && item.weight !== null ? item.weight : '-';
                     const tare = item.tare !== '' && item.tare !== null ? item.tare : '-';
-                    html += `<tr><td>${item.index}</td><td>${weight}</td><td>${tare}</td></tr>`;
+                    html += `<tr><td>${escapeHtml(item.index ?? '')}</td><td>${escapeHtml(weight)}</td><td>${escapeHtml(tare)}</td></tr>`;
                 });
                 html += `</tbody></table></div></div>`;
             } else {
@@ -2355,7 +2874,7 @@
                     html += escapeHtml(result.bullfrog.records_text);
                 } else {
                     result.bullfrog.records.forEach(r => {
-                        html += `序号：${r.num} 毛重：${r.mao} 皮：${r.pi}\n`;
+                        html += `序号：${escapeHtml(r.num)} 毛重：${escapeHtml(r.mao)} 皮：${escapeHtml(r.pi)}\n`;
                     });
                 }
                 html += '</pre>';
@@ -2366,9 +2885,9 @@
                     html += '<div class="ocr-result-section">';
                     html += '<h5>💰 汇总</h5>';
                     html += '<div class="ocr-result-grid">';
-                    if (s.total_mao) html += `<div class="ocr-result-item"><span class="label">总毛重：</span><span class="value">${s.total_mao}</span></div>`;
-                    if (s.total_pi) html += `<div class="ocr-result-item"><span class="label">总皮重：</span><span class="value">${s.total_pi}</span></div>`;
-                    if (s.net_weight) html += `<div class="ocr-result-item"><span class="label">净重：</span><span class="value">${s.net_weight}</span></div>`;
+                    if (s.total_mao) html += `<div class="ocr-result-item"><span class="label">总毛重：</span><span class="value">${escapeHtml(s.total_mao)}</span></div>`;
+                    if (s.total_pi) html += `<div class="ocr-result-item"><span class="label">总皮重：</span><span class="value">${escapeHtml(s.total_pi)}</span></div>`;
+                    if (s.net_weight) html += `<div class="ocr-result-item"><span class="label">净重：</span><span class="value">${escapeHtml(s.net_weight)}</span></div>`;
                     html += '</div></div>';
                 }
             }
@@ -2416,8 +2935,9 @@
                     }
                 }
                 if (h.date) {
-                    // 日期暂存到规格字段后面
-                    console.log('识别到日期:', h.date);
+                    // 回填识别到的收购日期（供导出 Excel 使用）
+                    const d = parseChineseDate(h.date);
+                    if (d) tabs[activeTabId].date = d;
                 }
             }
 
@@ -2454,57 +2974,19 @@
                 // 皮重仅显示在备注属性中，不自动覆盖皮框单重（crateWeight是全局参数，需手动设置）
             }
 
-            // 填充表格数据
-            const crateWeight = parseFloat(document.getElementById('crateWeight').value) || 2;
-            
-            // 清空现有数据
-            tabs[activeTabId].rows = [];
-            
-            // 填充新数据
-            // 公式：毛重 = 皮(框数) × 皮重(皮框单重) + 单框净重 × 框数
-            // 即：净重 = 毛重 - 框数 × 皮框单重；单框净重 = 净重 / 框数
-            let importedCount = 0;
-            items.forEach(item => {
-                const weight = parseFloat(item.weight) || 0;
+            // 填充表格数据（规则校验/校正/失败汇总已封装为纯函数，见 processImportItems / showImportReport）
+            // 公式：净重 = 毛重 - 框数 × 皮框单重；单框净重 = 净重 / 框数
+            const crateWeight = num(document.getElementById('crateWeight').value, 2);
+            const { rows, correctedRows, invalidRows, importedCount } = processImportItems(items, crateWeight);
 
-                // 跳过毛重为0或空的条目
-                if (weight === 0) return;
-
-                const tareStr = String(item.tare || '');
-                let crateCount = 6; // 默认6框
-
-                // 解析皮重/框数
-                if (tareStr && tareStr !== '-') {
-                    // 处理斜杠、反斜杠等特殊情况
-                    const tareClean = tareStr.replace(/[\\/\\|]/g, '');
-                    const tareNum = parseInt(tareClean);
-                    if (!isNaN(tareNum) && tareNum > 0 && tareNum <= 20) {
-                        crateCount = tareNum;
-                    }
-                }
-
-                // 计算分类：净重 = 毛重 - 框数 × 皮框单重
-                const crateWeightTotal = crateCount * crateWeight;
-                const netWeight = weight - crateWeightTotal;
-                const avgNetWeight = crateCount > 0 ? (netWeight / crateCount) : 0;
-                const category = calculateCategory(avgNetWeight);
-
-                tabs[activeTabId].rows.push({
-                    grossWeight: weight,
-                    crateCount: crateCount,
-                    category: category
-                });
-                importedCount++;
-            });
-
+            tabs[activeTabId].rows = rows;
             saveData();
             // 二次修正特殊行分类
             refineSpecialClassifications();
             renderTable();
             updateSummary();
             updateHeaderFields();
-
-            alert(`已成功填充 ${importedCount} 条OCR识别记录到统计表格！`);
+            showImportReport(importedCount, correctedRows, invalidRows);
         }
 
         // 复制OCR JSON结果
@@ -2521,25 +3003,237 @@
                 full_text: ocrCurrentResult.full_text
             };
 
-            const jsonStr = JSON.stringify(jsonToCopy, null, 2);
-            
-            navigator.clipboard.writeText(jsonStr).then(() => {
-                alert('OCR识别结果已复制到剪贴板！');
-            }).catch(() => {
-                // 降级方案
-                const textarea = document.createElement('textarea');
-                textarea.value = jsonStr;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                alert('OCR识别结果已复制到剪贴板！');
+            copyTextToClipboard(JSON.stringify(jsonToCopy, null, 2), 'OCR识别结果已复制到剪贴板！');
+        }
+
+        // ========== 云端同步（GitHub）==========
+        // 通过 GitHub Contents API 把全部单据数据序列化进仓库内的 JSON 文件，
+        // 实现跨设备拉取/上传。仓库可与本程序代码仓库分离（建议数据用私有仓库）。
+
+        let suppressAutoSync = false;
+        let autoSyncTimer = null;
+
+        // UTF-8 安全的 Base64（中文不乱码）
+        function utf8ToBase64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+            }
+            return btoa(binary);
+        }
+        function base64ToUtf8(b64) {
+            const binary = atob(b64);
+            const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        function getSyncConfig() {
+            const repo = (document.getElementById('ghRepo').value || localStorage.getItem('ghRepo') || '').trim();
+            const branch = (document.getElementById('ghBranch').value || localStorage.getItem('ghBranch') || 'main').trim() || 'main';
+            const path = (document.getElementById('ghDataPath').value || localStorage.getItem('ghDataPath') || 'data/bullfrog-data.json').trim() || 'data/bullfrog-data.json';
+            const token = (document.getElementById('ghToken').value || localStorage.getItem('ghToken') || '').trim();
+            return { repo: repo, branch: branch, path: path, token: token, valid: !!repo && !!token && !!path };
+        }
+
+        function isAutoSyncEnabled() {
+            const el = document.getElementById('ghAutoSync');
+            return !!(el && el.checked);
+        }
+
+        function setSyncStatus(message, type) {
+            const el = document.getElementById('syncStatus');
+            if (!el) return;
+            const color = type === 'success' ? '#198754' : type === 'error' ? '#dc3545' : type === 'loading' ? '#0d6efd' : '#6c757d';
+            el.style.color = color;
+            el.textContent = message;
+        }
+
+        async function ghApi(path, options) {
+            options = options || {};
+            const cfg = getSyncConfig();
+            const headers = {
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+            };
+            if (options.headers) Object.assign(headers, options.headers);
+            if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+            return fetch('https://api.github.com' + path, {
+                method: options.method || 'GET',
+                headers: headers,
+                body: options.body
             });
         }
 
-        // 测试函数
-        function __testFunction() {
-            return 'test ok';
+        // 上传当前状态到 GitHub（silent=true 时不弹窗/不刷状态，用于自动同步）
+        async function githubPush(silent) {
+            const cfg = getSyncConfig();
+            if (!cfg.valid) {
+                if (!silent) setSyncStatus('请先在「云端同步设置」中填写仓库与 Token', 'error');
+                return;
+            }
+            if (!silent) setSyncStatus('正在上传到 GitHub...', 'loading');
+            const data = buildState();
+            const content = utf8ToBase64(JSON.stringify(data, null, 2));
+            let sha = null;
+            try {
+                const getRes = await ghApi(`/repos/${cfg.repo}/contents/${cfg.path}?ref=${cfg.branch}`);
+                if (getRes.ok) sha = (await getRes.json()).sha;
+            } catch (e) { /* 文件可能尚不存在 */ }
+
+            const body = {
+                message: 'sync: update bullfrog data @ ' + new Date().toISOString(),
+                content: content,
+                branch: cfg.branch
+            };
+            if (sha) body.sha = sha;
+
+            const res = await ghApi(`/repos/${cfg.repo}/contents/${cfg.path}`, {
+                method: 'PUT',
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                if (!silent) setSyncStatus('✅ 已上传到 GitHub（' + cfg.repo + '）', 'success');
+                return;
+            }
+
+            const status = res.status;
+            const errText = await res.text();
+            // sha 冲突：重新取最新 sha 后重试一次，避免覆盖他人修改
+            if ((status === 409 || status === 422) && sha) {
+                try {
+                    const getRes2 = await ghApi(`/repos/${cfg.repo}/contents/${cfg.path}?ref=${cfg.branch}`);
+                    if (getRes2.ok) {
+                        const body2 = Object.assign({}, body, { sha: (await getRes2.json()).sha });
+                        const res2 = await ghApi(`/repos/${cfg.repo}/contents/${cfg.path}`, { method: 'PUT', body: JSON.stringify(body2) });
+                        if (res2.ok) {
+                            if (!silent) setSyncStatus('✅ 已上传到 GitHub（已解决冲突）', 'success');
+                            return;
+                        }
+                    }
+                } catch (e2) {}
+                if (!silent) setSyncStatus('上传冲突：已放弃本次上传以免覆盖他人修改。请先「从 GitHub 拉取」再编辑。', 'error');
+                return;
+            }
+            if (!silent) setSyncStatus('上传失败(' + status + ')：' + errText.slice(0, 200), 'error');
+        }
+
+        // 从 GitHub 拉取最新数据并应用到当前页面
+        async function githubPull() {
+            const cfg = getSyncConfig();
+            if (!cfg.valid) {
+                setSyncStatus('请先在「云端同步设置」中填写仓库与 Token', 'error');
+                return;
+            }
+            setSyncStatus('正在从 GitHub 拉取...', 'loading');
+            const res = await ghApi(`/repos/${cfg.repo}/contents/${cfg.path}?ref=${cfg.branch}`);
+            if (!res.ok) {
+                const t = await res.text();
+                setSyncStatus('拉取失败(' + res.status + ')：' + (res.status === 404 ? '数据文件不存在，请先上传一次。' : t.slice(0, 200)), 'error');
+                return;
+            }
+            try {
+                const j = await res.json();
+                const text = base64ToUtf8(j.content.replace(/\s/g, ''));
+                const obj = JSON.parse(text);
+                applyState(obj);
+                setSyncStatus('⬇️ 已从 GitHub 拉取最新数据', 'success');
+            } catch (e) {
+                setSyncStatus('解析云端数据失败：' + e.message, 'error');
+            }
+        }
+
+        // 将云端对象应用到内存与界面（抑制期间不触发自动上传）
+        function applyState(obj) {
+            suppressAutoSync = true;
+            try {
+                tabs = (obj && obj.tabs) ? obj.tabs : {};
+                currentTabId = obj.currentTabId || 1;
+                activeTabId = obj.activeTabId || 1;
+                if (obj.crateWeight != null) document.getElementById('crateWeight').value = num(obj.crateWeight, 2);
+                if (obj.ranges) applyRanges(obj.ranges);
+                if (Object.keys(tabs).length === 0) {
+                    tabs[1] = { name: '单据1', rows: [], farmer: '', captain: '', driver: '', driverPhone: '', plateNumber: '', spec: '', date: '' };
+                    activeTabId = 1;
+                }
+                saveData();
+                renderTabs();
+                renderTable();
+                updateSummary();
+                updateHeaderFields();
+                recalcAllCategories();
+            } finally {
+                suppressAutoSync = false;
+            }
+        }
+
+        // 数据变更后防抖自动上传
+        function scheduleAutoSync() {
+            if (suppressAutoSync) return;
+            if (!isAutoSyncEnabled()) return;
+            if (autoSyncTimer) clearTimeout(autoSyncTimer);
+            autoSyncTimer = setTimeout(() => { githubPush(true); }, 3000);
+        }
+
+        async function githubTest() {
+            const cfg = getSyncConfig();
+            if (!cfg.valid) { setSyncStatus('请先填写仓库与 Token', 'error'); return; }
+            setSyncStatus('正在测试连接...', 'loading');
+            const res = await ghApi(`/repos/${cfg.repo}`);
+            if (res.ok) {
+                const j = await res.json().catch(() => ({}));
+                setSyncStatus('✅ 连接成功：' + (j.full_name || cfg.repo) + (j.private ? '（私有仓库）' : '（公开仓库，注意数据暴露）'), 'success');
+            } else {
+                const t = await res.text();
+                setSyncStatus('连接失败(' + res.status + ')：' + t.slice(0, 200), 'error');
+            }
+        }
+
+        function githubClearConfig() {
+            ['ghRepo', 'ghBranch', 'ghDataPath', 'ghToken'].forEach(k => localStorage.removeItem(k));
+            ['ghRepo', 'ghBranch', 'ghDataPath', 'ghToken'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            setSyncStatus('已清除本地同步配置', 'info');
+        }
+
+        function toggleSyncPanel() {
+            const panel = document.getElementById('syncPanel');
+            const btn = document.getElementById('toggleSyncBtn');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.innerHTML = '☁️ 收起云端同步设置';
+            } else {
+                panel.style.display = 'none';
+                btn.innerHTML = '☁️ 打开云端同步设置';
+            }
+        }
+
+        function initSyncPanel() {
+            const fields = [
+                { id: 'ghRepo', key: 'ghRepo' },
+                { id: 'ghBranch', key: 'ghBranch', def: 'main' },
+                { id: 'ghDataPath', key: 'ghDataPath', def: 'data/bullfrog-data.json' },
+                { id: 'ghToken', key: 'ghToken' }
+            ];
+            fields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (!el) return;
+                const saved = localStorage.getItem(f.key);
+                if (saved != null) el.value = saved;
+                else if (f.def != null && !el.value) el.value = f.def;
+                const persist = () => localStorage.setItem(f.key, el.value.trim());
+                el.addEventListener('change', persist);
+                el.addEventListener('input', persist);
+            });
+            const auto = document.getElementById('ghAutoSync');
+            if (auto) {
+                auto.checked = localStorage.getItem('ghAutoSync') === '1';
+                auto.addEventListener('change', () => {
+                    localStorage.setItem('ghAutoSync', auto.checked ? '1' : '0');
+                    if (auto.checked && getSyncConfig().valid) githubPush(true);
+                });
+            }
         }
     </script>
 </body>
