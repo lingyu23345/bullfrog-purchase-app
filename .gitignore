@@ -16,3 +16,8 @@ Thumbs.db
 # 环境变量 / 密钥（切勿提交真实 Token）
 .env
 *.local
+
+# 本地工具文件（WorkBuddy）
+.workbuddy/
+_tmp/
+.wbapp_*.genie

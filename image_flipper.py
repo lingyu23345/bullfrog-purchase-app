@@ -89,7 +89,13 @@ def flip_vertical(img):
 
 # ---------- 单图处理 ----------
 
-def process_image(input_path, mode, output_path=None):
+def default_flipped_name(path):
+    """生成翻转后默认输出文件名：<原名>_flipped<原后缀>"""
+    p = Path(path)
+    return f"{p.stem}_flipped{p.suffix}"
+
+
+def process_image(input_path, mode, output_path):
     """根据模式处理单张图片，返回输出路径"""
     if not HAS_PIL:
         print("错误：缺少 Pillow 库。请运行：pip install Pillow", file=sys.stderr)
@@ -137,14 +143,9 @@ def process_image(input_path, mode, output_path=None):
         print(f"错误：不支持的模式 '{mode}'。可用：exif / exif+N / horizontal / vertical / 90cw / 90ccw / 180 / 270cw", file=sys.stderr)
         return None
 
-    # 确定输出路径
-    if output_path is None:
-        stem = input_path.stem
-        suffix = input_path.suffix
-        output_path = input_path.parent / f"{stem}_flipped{suffix}"
-    else:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+    # 确定输出路径（由调用方保证已提供；此处统一做路径归一与目录创建）
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 保存：经 exif_transpose 后 EXIF Orientation 已被自动去除（避免浏览器/查看器二次旋转）
     result.save(output_path)
@@ -193,12 +194,14 @@ def main():
     for src in inputs:
         src_path = Path(src)
         if is_batch:
-            target_dir = out_arg if (out_arg and out_arg.is_dir()) else (out_arg or src_path.parent)
+            target_dir = out_arg if (out_arg and out_arg.is_dir()) else src_path.parent
             target_dir = Path(target_dir)
             target_dir.mkdir(parents=True, exist_ok=True)
-            out_path = target_dir / f"{src_path.stem}_flipped{src_path.suffix}"
-        else:
+            out_path = target_dir / default_flipped_name(src_path)
+        elif out_arg is not None:
             out_path = out_arg
+        else:
+            out_path = src_path.parent / default_flipped_name(src_path)
         result = process_image(src_path, args.mode, out_path)
         if result:
             ok += 1

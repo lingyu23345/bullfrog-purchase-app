@@ -5,6 +5,7 @@
 同时托管前端页面与静态资源（同源部署，避免 CORS / IPv6 解析问题）。
 """
 import sys
+import os
 import time
 import json
 import traceback
@@ -21,8 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("doubao-proxy")
 
-BASE_DIR = __file__ if "__file__" in globals() else "."
-BASE_DIR = __import__("os").path.dirname(__import__("os").path.abspath(BASE_DIR))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # 仅允许这些静态资源被访问，避免泄露源码 / 任意文件读取
 ALLOWED_STATIC = {"index.html", "xlsx-js-style.js"}
